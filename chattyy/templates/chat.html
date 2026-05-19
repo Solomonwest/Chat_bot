@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Hackathon Chatbot</title>
+    <!-- Tailwind CSS CDN for swift styling -->
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white flex flex-col h-screen">
+
+    <!-- Header -->
+    <header class="p-4 bg-gray-800 border-b border-gray-700 text-center font-bold text-xl">
+        ⚡ Hackathon Gemini Bot
+    </header>
+
+    <!-- Chat Box Display -->
+    <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-4 max-w-3xl w-full mx-auto">
+        <div class="bg-gray-800 p-3 rounded-lg max-w-xs">
+            Hello! How can I assist your hackathon build today?
+        </div>
+    </div>
+
+    <!-- Input Area -->
+    <div class="p-4 bg-gray-800 border-t border-gray-700">
+        <div class="max-w-3xl mx-auto flex gap-2">
+            <input type="text" id="user-input" placeholder="Type a prompt..." 
+                   class="flex-1 bg-gray-700 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
+            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition">
+                Send
+            </button>
+        </div>
+    </div>
+
+    <script>
+        async function sendMessage() {
+            const inputField = document.getElementById("user-input");
+            const message = inputField.value.trim();
+            if (!message) return;
+
+            inputField.value = "";
+            const chatBox = document.getElementById("chat-box");
+
+            // Append User Message visually
+            chatBox.innerHTML += `
+                <div class="flex justify-end">
+                    <div class="bg-blue-600 p-3 rounded-lg max-w-xs text-right">${message}</div>
+                </div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+
+            // Send payload to our Django view endpoint
+            try {
+                const response = await fetch("/send-message/", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ message: message })
+                });
+                const data = await response.json();
+
+                // Append AI Response or Error handle
+                if (data.reply) {
+                    chatBox.innerHTML += `
+                        <div class="flex justify-start">
+                            <div class="bg-gray-800 p-3 rounded-lg max-w-md whitespace-pre-wrap">${data.reply}</div>
+                        </div>`;
+                } else {
+                    chatBox.innerHTML += `<div class="text-red-400 text-center text-sm">Error: ${data.error}</div>`;
+                }
+            } catch (err) {
+                chatBox.innerHTML += `<div class="text-red-400 text-center text-sm">Network error occurred.</div>`;
+            }
+            chatBox.scrollTop = chatBox.scrollHeight;
+        }
+
+        // Allow 'Enter' key submission
+        document.getElementById("user-input").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") sendMessage();
+        });
+    </script>
+</body>
+</html>
