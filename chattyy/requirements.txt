@@ -6,4 +6,5 @@ python-dotenv==1.2.2
 soupsieve==2.8.4
 typing_extensions==4.15.0
 whitenoise==6.12.0
-django
+django==5.2.7
+google-genai==0.1.0
