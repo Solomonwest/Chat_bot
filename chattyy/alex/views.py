@@ -11,7 +11,7 @@ from google import genai
 from google.genai import types
 
 # Initialize the GenAI client (automatically loads GEMINI_API_KEY from environment)
-client = genai.Client()
+client = genai.Client(api_key=os.environ.get('GEMINI_API_KEY'))
 
 def chat_home(request):
     """Renders the main chat interface."""
