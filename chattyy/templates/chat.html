@@ -1,80 +1,537 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <title>AI Hackathon Chatbot</title>
-    <!-- Tailwind CSS CDN for swift styling -->
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Hackathon AI Bot</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:ital,wght@0,300;0,400;0,500;1,400&family=Syne:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0c0c0f;
+    --surface: #141418;
+    --surface2: #1c1c22;
+    --border: #2a2a33;
+    --accent: #7b6ef6;
+    --accent2: #5ddcb2;
+    --text: #eeeef0;
+    --muted: #7a7a8c;
+    --user-bubble: #1e1b3a;
+    --bot-bubble: #141418;
+    --danger: #f06b6b;
+  }
+
+  html, body {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    display: flex;
+    flex-direction: column;
+    height: 100dvh;
+    max-width: 680px;
+    margin: 0 auto;
+    position: relative;
+  }
+
+  /* HEADER */
+  header {
+    flex-shrink: 0;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: var(--bg);
+    position: relative;
+    z-index: 10;
+  }
+
+  .header-logo {
+    width: 34px;
+    height: 34px;
+    border-radius: 8px;
+    background: linear-gradient(135deg, #7b6ef6, #5ddcb2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+
+  .header-logo svg { width: 18px; height: 18px; }
+
+  .header-text h1 {
+    font-family: 'Syne', sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  .header-text p {
+    font-size: 11px;
+    color: var(--muted);
+    margin-top: 1px;
+  }
+
+  .status-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--accent2);
+    margin-left: auto;
+    flex-shrink: 0;
+    animation: pulse 2.4s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  /* CHAT AREA */
+  #chat-box {
+    flex: 1;
+    overflow-y: auto;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    scroll-behavior: smooth;
+  }
+
+  #chat-box::-webkit-scrollbar { width: 4px; }
+  #chat-box::-webkit-scrollbar-track { background: transparent; }
+  #chat-box::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  /* MESSAGES */
+  .msg-row {
+    display: flex;
+    gap: 10px;
+    max-width: 100%;
+    animation: slideUp 0.22s ease;
+  }
+
+  @keyframes slideUp {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .msg-row.bot { align-items: flex-start; }
+  .msg-row.user { justify-content: flex-end; }
+
+  .bot-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 7px;
+    background: linear-gradient(135deg, #7b6ef6, #5ddcb2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .bot-avatar svg { width: 14px; height: 14px; }
+
+  .bubble {
+    padding: 10px 14px;
+    border-radius: 14px;
+    line-height: 1.65;
+    font-size: 13.5px;
+    max-width: min(78%, 480px);
+    word-break: break-word;
+  }
+
+  .msg-row.bot .bubble {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top-left-radius: 4px;
+    color: var(--text);
+  }
+
+  .msg-row.user .bubble {
+    background: var(--user-bubble);
+    border: 1px solid #3a3460;
+    border-top-right-radius: 4px;
+    color: #d4d0ff;
+  }
+
+  .timestamp {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 4px;
+    padding: 0 4px;
+  }
+
+  .msg-row.user .timestamp { text-align: right; }
+
+  /* TYPING INDICATOR */
+  .typing-dots {
+    display: flex;
+    gap: 4px;
+    align-items: center;
+    padding: 4px 0;
+  }
+
+  .typing-dots span {
+    width: 5px; height: 5px;
+    background: var(--muted);
+    border-radius: 50%;
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
+  .typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+  .typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+  @keyframes blink {
+    0%, 80%, 100% { opacity: 0.25; }
+    40%            { opacity: 1; }
+  }
+
+  /* ERROR */
+  .error-msg {
+    text-align: center;
+    font-size: 12px;
+    color: var(--danger);
+    padding: 6px 12px;
+    background: rgba(240,107,107,0.08);
+    border-radius: 8px;
+    border: 1px solid rgba(240,107,107,0.2);
+  }
+
+  /* INPUT AREA */
+  .input-area {
+    flex-shrink: 0;
+    padding: 12px 16px 16px;
+    border-top: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .input-wrap {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 10px 10px 14px;
+    transition: border-color 0.2s;
+  }
+
+  .input-wrap:focus-within {
+    border-color: var(--accent);
+  }
+
+  #user-input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text);
+    font-family: 'DM Mono', monospace;
+    font-size: 13.5px;
+    line-height: 1.5;
+    resize: none;
+    min-height: 22px;
+    max-height: 120px;
+    overflow-y: auto;
+    caret-color: var(--accent);
+  }
+
+  #user-input::placeholder { color: var(--muted); }
+
+  #user-input::-webkit-scrollbar { width: 3px; }
+  #user-input::-webkit-scrollbar-thumb { background: var(--border); border-radius: 99px; }
+
+  #send-btn {
+    width: 36px;
+    height: 36px;
+    flex-shrink: 0;
+    background: var(--accent);
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.18s, transform 0.12s;
+  }
+
+  #send-btn:hover  { background: #6b5ee6; }
+  #send-btn:active { transform: scale(0.92); }
+  #send-btn:disabled { background: var(--surface2); cursor: default; }
+
+  #send-btn svg { width: 16px; height: 16px; }
+
+  .input-hint {
+    font-size: 10.5px;
+    color: var(--muted);
+    margin-top: 7px;
+    padding-left: 2px;
+  }
+
+  /* SUGGESTED PROMPTS */
+  .suggestions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .suggestion-chip {
+    font-family: 'DM Mono', monospace;
+    font-size: 11.5px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--muted);
+    padding: 6px 12px;
+    border-radius: 99px;
+    cursor: pointer;
+    transition: border-color 0.18s, color 0.18s, background 0.18s;
+    white-space: nowrap;
+  }
+
+  .suggestion-chip:hover {
+    border-color: var(--accent);
+    color: var(--text);
+    background: var(--user-bubble);
+  }
+
+  /* DIVIDER */
+  .day-label {
+    text-align: center;
+    font-size: 11px;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 6px 0;
+  }
+
+  .day-label::before, .day-label::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* RESPONSIVE TWEAKS */
+  @media (max-width: 400px) {
+    header { padding: 12px 14px; }
+    #chat-box { padding: 16px 12px; }
+    .input-area { padding: 10px 12px 14px; }
+    .bubble { font-size: 13px; }
+  }
+</style>
 </head>
-<body class="bg-gray-900 text-white flex flex-col h-screen">
+<body>
+<div class="app">
 
-    <!-- Header -->
-    <header class="p-4 bg-gray-800 border-b border-gray-700 text-center font-bold text-xl">
-        ⚡ Hackathon Gemini Bot
-    </header>
+  <!-- HEADER -->
+  <header>
+    <div class="header-logo">
+      <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 2L4 7l8 5 8-5-8-5z" fill="white" opacity="0.9"/>
+        <path d="M4 12l8 5 8-5" stroke="white" stroke-width="2" stroke-linecap="round"/>
+        <path d="M4 17l8 5 8-5" stroke="white" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      </svg>
+    </div>
+    <div class="header-text">
+      <h1>Hackathon AI</h1>
+      <p>Powered by Gemini · Ready to build</p>
+    </div>
+    <div class="status-dot" title="Online"></div>
+  </header>
 
-    <!-- Chat Box Display -->
-    <div id="chat-box" class="flex-1 p-4 overflow-y-auto space-y-4 max-w-3xl w-full mx-auto">
-        <div class="bg-gray-800 p-3 rounded-lg max-w-xs">
-            Hello! How can I assist your hackathon build today?
+  <!-- CHAT -->
+  <div id="chat-box">
+    <div class="day-label">Today</div>
+
+    <!-- initial bot message -->
+    <div class="msg-row bot">
+      <div class="bot-avatar">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 12l8 5 8-5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div>
+        <div class="bubble">
+          Hey there! ⚡ I'm your hackathon co-pilot.<br>
+          Ask me anything — code, ideas, debugging, docs.
         </div>
+        <div class="timestamp" id="init-time"></div>
+      </div>
     </div>
 
-    <!-- Input Area -->
-    <div class="p-4 bg-gray-800 border-t border-gray-700">
-        <div class="max-w-3xl mx-auto flex gap-2">
-            <input type="text" id="user-input" placeholder="Type a prompt..." 
-                   class="flex-1 bg-gray-700 p-3 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-white">
-            <button onclick="sendMessage()" class="bg-blue-600 hover:bg-blue-700 px-6 py-3 rounded-lg font-bold transition">
-                Send
-            </button>
-        </div>
+    <!-- suggested prompts -->
+    <div class="suggestions">
+      <button class="suggestion-chip" onclick="fillPrompt('Write a REST API in Python')">Write a REST API</button>
+      <button class="suggestion-chip" onclick="fillPrompt('Debug this code for me')">Debug my code</button>
+      <button class="suggestion-chip" onclick="fillPrompt('Give me hackathon project ideas')">Project ideas</button>
     </div>
+  </div>
 
-    <script>
-        async function sendMessage() {
-            const inputField = document.getElementById("user-input");
-            const message = inputField.value.trim();
-            if (!message) return;
+  <!-- INPUT -->
+  <div class="input-area">
+    <div class="input-wrap">
+      <textarea
+        id="user-input"
+        placeholder="Ask anything..."
+        rows="1"
+        aria-label="Chat message"
+      ></textarea>
+      <button id="send-btn" onclick="sendMessage()" aria-label="Send message">
+        <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M22 2L11 13" stroke="white" stroke-width="2" stroke-linecap="round"/>
+          <path d="M22 2L15 22l-4-9-9-4 20-7z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </div>
+    <p class="input-hint">Enter to send · Shift+Enter for new line</p>
+  </div>
 
-            inputField.value = "";
-            const chatBox = document.getElementById("chat-box");
+</div>
 
-            // Append User Message visually
-            chatBox.innerHTML += `
-                <div class="flex justify-end">
-                    <div class="bg-blue-600 p-3 rounded-lg max-w-xs text-right">${message}</div>
-                </div>`;
-            chatBox.scrollTop = chatBox.scrollHeight;
+<script>
+  const chatBox = document.getElementById('chat-box');
+  const inputEl = document.getElementById('user-input');
+  const sendBtn = document.getElementById('send-btn');
 
-            // Send payload to our Django view endpoint
-            try {
-                const response = await fetch("/send-message/", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ message: message })
-                });
-                const data = await response.json();
+  // Set initial timestamp
+  document.getElementById('init-time').textContent = formatTime(new Date());
 
-                // Append AI Response or Error handle
-                if (data.reply) {
-                    chatBox.innerHTML += `
-                        <div class="flex justify-start">
-                            <div class="bg-gray-800 p-3 rounded-lg max-w-md whitespace-pre-wrap">${data.reply}</div>
-                        </div>`;
-                } else {
-                    chatBox.innerHTML += `<div class="text-red-400 text-center text-sm">Error: ${data.error}</div>`;
-                }
-            } catch (err) {
-                chatBox.innerHTML += `<div class="text-red-400 text-center text-sm">Network error occurred.</div>`;
-            }
-            chatBox.scrollTop = chatBox.scrollHeight;
-        }
+  function formatTime(d) {
+    return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+  }
 
-        // Allow 'Enter' key submission
-        document.getElementById("user-input").addEventListener("keypress", function(e) {
-            if (e.key === "Enter") sendMessage();
-        });
-    </script>
+  function autoResize() {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  }
+
+  inputEl.addEventListener('input', autoResize);
+
+  inputEl.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  function fillPrompt(text) {
+    inputEl.value = text;
+    autoResize();
+    inputEl.focus();
+  }
+
+  function appendUserMsg(text) {
+    const row = document.createElement('div');
+    row.className = 'msg-row user';
+    row.innerHTML = `
+      <div>
+        <div class="bubble">${escHtml(text)}</div>
+        <div class="timestamp">${formatTime(new Date())}</div>
+      </div>`;
+    chatBox.appendChild(row);
+    scrollBottom();
+  }
+
+  function appendBotMsg(text) {
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.innerHTML = `
+      <div class="bot-avatar">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 12l8 5 8-5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div>
+        <div class="bubble">${text}</div>
+        <div class="timestamp">${formatTime(new Date())}</div>
+      </div>`;
+    chatBox.appendChild(row);
+    scrollBottom();
+    return row;
+  }
+
+  function appendTyping() {
+    const row = document.createElement('div');
+    row.className = 'msg-row bot';
+    row.id = 'typing-row';
+    row.innerHTML = `
+      <div class="bot-avatar">
+        <svg viewBox="0 0 24 24" fill="white"><path d="M12 2L4 7l8 5 8-5-8-5z"/><path d="M4 12l8 5 8-5" stroke="white" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+      </div>
+      <div class="bubble" style="padding:12px 14px;">
+        <div class="typing-dots"><span></span><span></span><span></span></div>
+      </div>`;
+    chatBox.appendChild(row);
+    scrollBottom();
+  }
+
+  function removeTyping() {
+    const el = document.getElementById('typing-row');
+    if (el) el.remove();
+  }
+
+  function appendError(msg) {
+    const div = document.createElement('div');
+    div.className = 'error-msg';
+    div.textContent = msg;
+    chatBox.appendChild(div);
+    scrollBottom();
+  }
+
+  function scrollBottom() {
+    chatBox.scrollTop = chatBox.scrollHeight;
+  }
+
+  function escHtml(s) {
+    return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+  }
+
+  async function sendMessage() {
+    const message = inputEl.value.trim();
+    if (!message) return;
+
+    // remove suggestions if present
+    const sug = chatBox.querySelector('.suggestions');
+    if (sug) sug.remove();
+
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+    sendBtn.disabled = true;
+
+    appendUserMsg(message);
+    appendTyping();
+
+    try {
+      const response = await fetch('/send-message/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message })
+      });
+      const data = await response.json();
+      removeTyping();
+
+      if (data.reply) {
+        appendBotMsg(escHtml(data.reply));
+      } else {
+        appendError('Error: ' + (data.error || 'Unknown error from server.'));
+      }
+    } catch (err) {
+      removeTyping();
+      appendError('Network error — check your connection and try again.');
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+</script>
 </body>
 </html>
